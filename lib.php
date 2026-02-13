@@ -33,9 +33,12 @@ function local_vendorbilling_extend_navigation(global_navigation $navigation) {
         global $PAGE;
         $currenturl = $PAGE->url;
         if ($currenturl && $currenturl->compare(new moodle_url('/my/'), URL_MATCH_BASE)) {
-            $alreadyredirected = optional_param('vbredirect', 0, PARAM_INT);
-            if (!$alreadyredirected) {
-                redirect(new moodle_url('/local/vendorbilling/index.php', ['vbredirect' => 1]));
+            $fromlogin = optional_param('redirect', 0, PARAM_INT) == 0;
+            if ($fromlogin) {
+                if (empty($SESSION->vendorbilling_landing_done)) {
+                    $SESSION->vendorbilling_landing_done = true;
+                    redirect(new moodle_url('/local/vendorbilling/index.php'));
+                }
             }
         }
 
