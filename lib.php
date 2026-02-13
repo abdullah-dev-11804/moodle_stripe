@@ -35,6 +35,10 @@ function local_vendorbilling_extend_navigation(global_navigation $navigation) {
         if ($currenturl && $currenturl->compare(new moodle_url('/my/'), URL_MATCH_BASE)) {
             $fromlogin = optional_param('redirect', 0, PARAM_INT) == 0;
             if ($fromlogin) {
+                global $SESSION;
+                if (!isset($SESSION) || !is_object($SESSION)) {
+                    $SESSION = new stdClass();
+                }
                 if (empty($SESSION->vendorbilling_landing_done)) {
                     $SESSION->vendorbilling_landing_done = true;
                     redirect(new moodle_url('/local/vendorbilling/index.php'));
