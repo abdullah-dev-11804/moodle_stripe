@@ -30,6 +30,15 @@ function local_vendorbilling_extend_navigation(global_navigation $navigation) {
     error_log('vendorbilling: extend_navigation for user ' . $USER->id);
     $context = context_system::instance();
     if (has_capability('local/vendorbilling:vendoradmin', $context)) {
+        global $PAGE;
+        $currenturl = $PAGE->url;
+        if ($currenturl && $currenturl->compare(new moodle_url('/my/'), URL_MATCH_BASE)) {
+            $alreadyredirected = optional_param('vbredirect', 0, PARAM_INT);
+            if (!$alreadyredirected) {
+                redirect(new moodle_url('/local/vendorbilling/index.php', ['vbredirect' => 1]));
+            }
+        }
+
         error_log('vendorbilling: user has vendoradmin capability (main nav)');
         $url = new moodle_url('/local/vendorbilling/index.php');
 
