@@ -143,6 +143,7 @@ class manager {
     public static function ensure_vendor_admin(\stdClass $vendor, string $email, ?string $fullname = null): \stdClass {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/user/lib.php');
+        require_once($CFG->libdir . '/moodlelib.php');
 
         $created = false;
         $user = $DB->get_record('user', ['email' => $email, 'deleted' => 0]);
@@ -167,6 +168,7 @@ class manager {
 
             $userid = user_create_user($user, false, false);
             $user = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
+            update_internal_user_password($user, $plainpassword);
             $created = true;
             self::log('info', 'Created vendor admin user', $vendor->id ?? null, [
                 'userid' => $user->id,
@@ -257,6 +259,7 @@ class manager {
     public static function enforce_seat_limit(\stdClass $vendor): void {
         global $CFG, $DB;
         require_once($CFG->dirroot . '/user/lib.php');
+        require_once($CFG->libdir . '/moodlelib.php');
 
         if (!self::is_active_status($vendor->status ?? '')) {
             return;
@@ -573,6 +576,7 @@ class manager {
 
         $userid = user_create_user($user, false, false);
         $user = $DB->get_record('user', ['id' => $userid], '*', MUST_EXIST);
+        update_internal_user_password($user, $plainpassword);
 
         $cohort = self::ensure_cohort($vendor);
         self::add_user_to_cohort($cohort->id, $user->id);
