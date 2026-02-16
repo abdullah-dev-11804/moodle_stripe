@@ -34,7 +34,23 @@ class manager {
 
     public static function get_vendor_for_user(int $userid): ?\stdClass {
         global $DB;
-        return $DB->get_record('local_vendorbilling_vendor', ['vendor_admin_userid' => $userid]) ?: null;
+        $vendor = $DB->get_record('local_vendorbilling_vendor', ['vendor_admin_userid' => $userid]);
+        if ($vendor) {
+            return $vendor;
+        }
+        // Fallback: match by email for cases where the user id doesn't match but email does.
+        $useremail = $DB->get_field('user', 'email', ['id' => $userid]);
+        if ($useremail) {
+            $useremail = trim(\core_text::strtolower($useremail));
+            $vendor = $DB->get_record('local_vendorbilling_vendor', ['vendor_admin_email' => $useremail]);
+            if ($vendor) {
+                $vendor->vendor_admin_userid = $userid;
+                $vendor->updated_at = time();
+                $DB->update_record('local_vendorbilling_vendor', $vendor);
+                return $vendor;
+            }
+        }
+        return null;
     }
 
     public static function get_vendor_by_stripe(?string $customerid, ?string $subscriptionid): ?\stdClass {
