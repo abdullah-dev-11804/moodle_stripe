@@ -144,42 +144,24 @@ echo html_writer::tag('div', $statuslabel, ['class' => 'vb-status']);
 echo html_writer::end_tag('div');
 
 echo html_writer::start_tag('div', ['class' => 'vb-actions']);
-$createurl = new moodle_url('/local/vendorbilling/create_user.php');
-$bulkuploadurl = new moodle_url('/local/vendorbilling/bulk_upload.php');
-$createattrs = ['class' => 'vb-btn vb-btn-primary' . ($statusactive ? '' : ' vb-btn-disabled')];
-$bulkattrs = ['class' => 'vb-btn vb-btn-secondary' . ($statusactive ? '' : ' vb-btn-disabled')];
-echo html_writer::link($createurl, get_string('portal_createuser', 'local_vendorbilling'), $createattrs);
-echo html_writer::link($bulkuploadurl, get_string('portal_bulkupload', 'local_vendorbilling'), $bulkattrs);
+if ($statusactive) {
+    $createurl = new moodle_url('/local/vendorbilling/create_user.php');
+    $bulkuploadurl = new moodle_url('/local/vendorbilling/bulk_upload.php');
+    $createattrs = ['class' => 'vb-btn vb-btn-primary'];
+    $bulkattrs = ['class' => 'vb-btn vb-btn-secondary'];
+    echo html_writer::link($createurl, get_string('portal_createuser', 'local_vendorbilling'), $createattrs);
+    echo html_writer::link($bulkuploadurl, get_string('portal_bulkupload', 'local_vendorbilling'), $bulkattrs);
 
-$unsuburl = new moodle_url('/local/vendorbilling/index.php', [
-    'action' => 'unsubscribe',
-    'sesskey' => sesskey(),
-]);
-$unsubattrs = [
-    'class' => 'vb-btn vb-btn-outline',
-    'onclick' => "return confirm('" . get_string('portal_unsubscribe_confirm', 'local_vendorbilling') . "');",
-];
-echo html_writer::link($unsuburl, get_string('portal_unsubscribe', 'local_vendorbilling'), $unsubattrs);
-echo html_writer::end_tag('div');
-echo html_writer::end_tag('div');
-
-echo html_writer::start_tag('div', ['class' => 'vb-grid']);
-echo html_writer::start_tag('div', ['class' => 'vb-card']);
-echo html_writer::tag('h3', get_string('portal_seatsused', 'local_vendorbilling'));
-echo html_writer::tag('p', (string) $seatsused, ['class' => 'vb-metric']);
-echo html_writer::end_tag('div');
-
-echo html_writer::start_tag('div', ['class' => 'vb-card']);
-echo html_writer::tag('h3', get_string('portal_seatsremaining', 'local_vendorbilling'));
-echo html_writer::tag('p', (string) $seatsremaining, ['class' => 'vb-metric']);
-$progress = $seatlimit > 0 ? min(100, round(($seatsused / $seatlimit) * 100)) : 0;
-echo html_writer::tag('div', html_writer::tag('span', '', ['style' => 'width:' . $progress . '%']), ['class' => 'vb-progress']);
-echo html_writer::tag('p', $progress . '% used', ['class' => 'vb-muted']);
-echo html_writer::end_tag('div');
-
-echo html_writer::start_tag('div', ['class' => 'vb-card']);
-echo html_writer::tag('h3', get_string('portal_seatlimit', 'local_vendorbilling'));
-echo html_writer::tag('p', (string) $seatlimit, ['class' => 'vb-metric']);
+    $unsuburl = new moodle_url('/local/vendorbilling/index.php', [
+        'action' => 'unsubscribe',
+        'sesskey' => sesskey(),
+    ]);
+    $unsubattrs = [
+        'class' => 'vb-btn vb-btn-outline',
+        'onclick' => "return confirm('" . get_string('portal_unsubscribe_confirm', 'local_vendorbilling') . "');",
+    ];
+    echo html_writer::link($unsuburl, get_string('portal_unsubscribe', 'local_vendorbilling'), $unsubattrs);
+}
 echo html_writer::end_tag('div');
 echo html_writer::end_tag('div');
 
@@ -189,58 +171,81 @@ if (!$statusactive) {
         $message .= ' ' . html_writer::link($dashboardurl, get_string('portal_resubscribe', 'local_vendorbilling'));
     }
     echo html_writer::tag('div', $message, ['class' => 'vb-banner']);
-}
-
-$users = manager::get_vendor_users($vendor);
-echo html_writer::tag('h3', get_string('portal_userlist', 'local_vendorbilling'), ['class' => 'vb-users']);
-if (empty($users)) {
-    echo $OUTPUT->notification(get_string('portal_nousers', 'local_vendorbilling'), 'info');
 } else {
-    $table = new html_table();
-    $table->attributes['class'] = 'generaltable vb-table';
-    $table->head = [
-        get_string('form_firstname', 'local_vendorbilling'),
-        get_string('form_lastname', 'local_vendorbilling'),
-        get_string('form_email', 'local_vendorbilling'),
-        get_string('portal_status', 'local_vendorbilling'),
-        '',
-    ];
-    foreach ($users as $user) {
-        $editurl = new moodle_url('/local/vendorbilling/edit_user.php', [
-            'userid' => $user->id,
-        ]);
-        $edit = html_writer::link($editurl, get_string('portal_edit', 'local_vendorbilling'));
+    echo html_writer::start_tag('div', ['class' => 'vb-grid']);
+    echo html_writer::start_tag('div', ['class' => 'vb-card']);
+    echo html_writer::tag('h3', get_string('portal_seatsused', 'local_vendorbilling'));
+    echo html_writer::tag('p', (string) $seatsused, ['class' => 'vb-metric']);
+    echo html_writer::end_tag('div');
 
-        $suspendurl = new moodle_url('/local/vendorbilling/index.php', [
-            'action' => 'suspend',
-            'userid' => $user->id,
-            'suspend' => $user->suspended ? 0 : 1,
-            'sesskey' => sesskey(),
-        ]);
-        $suspendlabel = $user->suspended
-            ? get_string('portal_unsuspend', 'local_vendorbilling')
-            : get_string('portal_suspend', 'local_vendorbilling');
-        $suspendlink = html_writer::link($suspendurl, $suspendlabel);
+    echo html_writer::start_tag('div', ['class' => 'vb-card']);
+    echo html_writer::tag('h3', get_string('portal_seatsremaining', 'local_vendorbilling'));
+    echo html_writer::tag('p', (string) $seatsremaining, ['class' => 'vb-metric']);
+    $progress = $seatlimit > 0 ? min(100, round(($seatsused / $seatlimit) * 100)) : 0;
+    echo html_writer::tag('div', html_writer::tag('span', '', ['style' => 'width:' . $progress . '%']), ['class' => 'vb-progress']);
+    echo html_writer::tag('p', $progress . '% used', ['class' => 'vb-muted']);
+    echo html_writer::end_tag('div');
 
-        $deleteurl = new moodle_url('/local/vendorbilling/index.php', [
-            'action' => 'delete',
-            'userid' => $user->id,
-            'sesskey' => sesskey(),
-        ]);
-        $delete = html_writer::link($deleteurl, get_string('portal_delete', 'local_vendorbilling'), [
-            'onclick' => "return confirm('" . get_string('portal_deleteconfirm', 'local_vendorbilling') . "');",
-        ]);
-        $table->data[] = [
-            format_string($user->firstname),
-            format_string($user->lastname),
-            s($user->email),
-            $user->suspended ? get_string('portal_suspended', 'local_vendorbilling') : get_string('portal_active', 'local_vendorbilling'),
-            html_writer::tag('span', $edit . ' | ' . $suspendlink . ' | ' . $delete, ['class' => 'actions']),
-        ];
-    }
-    echo html_writer::table($table);
+    echo html_writer::start_tag('div', ['class' => 'vb-card']);
+    echo html_writer::tag('h3', get_string('portal_seatlimit', 'local_vendorbilling'));
+    echo html_writer::tag('p', (string) $seatlimit, ['class' => 'vb-metric']);
+    echo html_writer::end_tag('div');
+    echo html_writer::end_tag('div');
 }
 
-echo html_writer::end_tag('div');
+if ($statusactive) {
+    $users = manager::get_vendor_users($vendor);
+    echo html_writer::tag('h3', get_string('portal_userlist', 'local_vendorbilling'), ['class' => 'vb-users']);
+    if (empty($users)) {
+        echo $OUTPUT->notification(get_string('portal_nousers', 'local_vendorbilling'), 'info');
+    } else {
+        $table = new html_table();
+        $table->attributes['class'] = 'generaltable vb-table';
+        $table->head = [
+            get_string('form_firstname', 'local_vendorbilling'),
+            get_string('form_lastname', 'local_vendorbilling'),
+            get_string('form_email', 'local_vendorbilling'),
+            get_string('portal_status', 'local_vendorbilling'),
+            '',
+        ];
+        foreach ($users as $user) {
+            $editurl = new moodle_url('/local/vendorbilling/edit_user.php', [
+                'userid' => $user->id,
+            ]);
+            $edit = html_writer::link($editurl, get_string('portal_edit', 'local_vendorbilling'));
+
+            $suspendurl = new moodle_url('/local/vendorbilling/index.php', [
+                'action' => 'suspend',
+                'userid' => $user->id,
+                'suspend' => $user->suspended ? 0 : 1,
+                'sesskey' => sesskey(),
+            ]);
+            $suspendlabel = $user->suspended
+                ? get_string('portal_unsuspend', 'local_vendorbilling')
+                : get_string('portal_suspend', 'local_vendorbilling');
+            $suspendlink = html_writer::link($suspendurl, $suspendlabel);
+
+            $deleteurl = new moodle_url('/local/vendorbilling/index.php', [
+                'action' => 'delete',
+                'userid' => $user->id,
+                'sesskey' => sesskey(),
+            ]);
+            $delete = html_writer::link($deleteurl, get_string('portal_delete', 'local_vendorbilling'), [
+                'onclick' => "return confirm('" . get_string('portal_deleteconfirm', 'local_vendorbilling') . "');",
+            ]);
+            $table->data[] = [
+                format_string($user->firstname),
+                format_string($user->lastname),
+                s($user->email),
+                $user->suspended ? get_string('portal_suspended', 'local_vendorbilling') : get_string('portal_active', 'local_vendorbilling'),
+                html_writer::tag('span', $edit . ' | ' . $suspendlink . ' | ' . $delete, ['class' => 'actions']),
+            ];
+        }
+        echo html_writer::table($table);
+    }
+    echo html_writer::end_tag('div');
+} else {
+    echo html_writer::end_tag('div');
+}
 
 echo $OUTPUT->footer();
