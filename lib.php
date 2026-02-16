@@ -26,8 +26,7 @@ function local_vendorbilling_extend_navigation(global_navigation $navigation) {
     if (!isloggedin() || isguestuser()) {
         return;
     }
-    global $USER;
-    error_log('vendorbilling: extend_navigation for user ' . $USER->id);
+
     $context = context_system::instance();
     if (has_capability('local/vendorbilling:vendoradmin', $context)) {
         global $PAGE;
@@ -46,7 +45,6 @@ function local_vendorbilling_extend_navigation(global_navigation $navigation) {
             }
         }
 
-        error_log('vendorbilling: user has vendoradmin capability (main nav)');
         $url = new moodle_url('/local/vendorbilling/index.php');
 
         $node = $navigation->add(
@@ -63,9 +61,6 @@ function local_vendorbilling_extend_navigation(global_navigation $navigation) {
         } else if (property_exists($node, 'showinprimarynavigation')) {
             $node->showinprimarynavigation = true;
         }
-        error_log('vendorbilling: navigation node added to main nav');
-    } else {
-        error_log('vendorbilling: user lacks vendoradmin capability (main nav)');
     }
 }
 
@@ -82,10 +77,8 @@ function local_vendorbilling_extend_navigation_user_settings(
 
     $systemcontext = context_system::instance();
     if (!has_capability('local/vendorbilling:vendoradmin', $systemcontext)) {
-        error_log('vendorbilling: user lacks vendoradmin capability (user settings nav)');
         return;
     }
-    error_log('vendorbilling: user has vendoradmin capability (user settings nav)');
 
     $parentnode->add(
         get_string('portal_heading', 'local_vendorbilling'),
@@ -94,5 +87,44 @@ function local_vendorbilling_extend_navigation_user_settings(
         null,
         'vendorbilling'
     );
-    error_log('vendorbilling: navigation node added to user settings nav');
+}
+
+/**
+ * Fallback for Boost-style primary nav rendering where custom nodes may be hidden.
+ *
+ * @return string
+ */
+function local_vendorbilling_before_standard_top_of_body_html(): string {
+    if (!isloggedin() || isguestuser()) {
+        return '';
+    }
+
+    $systemcontext = context_system::instance();
+    if (!has_capability('local/vendorbilling:vendoradmin', $systemcontext)) {
+        return '';
+    }
+
+    $url = (new moodle_url('/local/vendorbilling/index.php'))->out(false);
+    $label = get_string('portal_heading', 'local_vendorbilling');
+    $jsurl = json_encode($url);
+    $jslabel = json_encode($label);
+
+    return '<script>(function(){document.addEventListener("DOMContentLoaded",function(){try{'
+        . 'var href=' . $jsurl . ';'
+        . 'var label=' . $jslabel . ';'
+        . 'var nav=document.querySelector("header .primary-navigation .navigation, .primary-navigation .navigation, header .primary-navigation ul");'
+        . 'if(!nav){return;}'
+        . 'if(nav.querySelector(\'a[href="\'+href+\'"]\')){return;}'
+        . 'var item=document.createElement("li");'
+        . 'item.className="nav-item";'
+        . 'var link=document.createElement("a");'
+        . 'link.className="nav-link";'
+        . 'link.href=href;'
+        . 'link.textContent=label;'
+        . 'try{var targetPath=(new URL(href,window.location.origin)).pathname.replace(/\\/+$/,"");'
+        . 'var currentPath=window.location.pathname.replace(/\\/+$/,"");'
+        . 'if(targetPath===currentPath){link.classList.add("active");}}catch(e){}'
+        . 'item.appendChild(link);'
+        . 'nav.appendChild(item);'
+        . '}catch(e){}});})();</script>';
 }
