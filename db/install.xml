@@ -13,6 +13,7 @@
         <FIELD NAME="seat_limit" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="status" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT=""/>
         <FIELD NAME="vendor_admin_userid" TYPE="int" LENGTH="10" NOTNULL="false"/>
+        <FIELD NAME="vendor_admin_email" TYPE="char" LENGTH="255" NOTNULL="false"/>
         <FIELD NAME="cohortid" TYPE="int" LENGTH="10" NOTNULL="false"/>
         <FIELD NAME="created_at" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
         <FIELD NAME="updated_at" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
@@ -24,6 +25,7 @@
         <INDEX NAME="stripe_customer_idx" UNIQUE="false" FIELDS="stripe_customer_id"/>
         <INDEX NAME="stripe_subscription_idx" UNIQUE="false" FIELDS="stripe_subscription_id"/>
         <INDEX NAME="vendor_admin_idx" UNIQUE="false" FIELDS="vendor_admin_userid"/>
+        <INDEX NAME="vendor_admin_email_idx" UNIQUE="false" FIELDS="vendor_admin_email"/>
         <INDEX NAME="cohort_idx" UNIQUE="false" FIELDS="cohortid"/>
       </INDEXES>
     </TABLE>

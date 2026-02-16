@@ -54,6 +54,15 @@ class manager {
         return null;
     }
 
+    public static function get_vendor_by_email(?string $email): ?\stdClass {
+        global $DB;
+        if (empty($email)) {
+            return null;
+        }
+        $email = trim(\core_text::strtolower($email));
+        return $DB->get_record('local_vendorbilling_vendor', ['vendor_admin_email' => $email]) ?: null;
+    }
+
     public static function upsert_vendor(array $fields): \stdClass {
         global $DB;
         $now = time();
@@ -62,9 +71,15 @@ class manager {
             $fields['stripe_customer_id'] ?? null,
             $fields['stripe_subscription_id'] ?? null
         );
+        if (!$vendor && !empty($fields['vendor_admin_email'])) {
+            $vendor = self::get_vendor_by_email($fields['vendor_admin_email']);
+        }
 
         if ($vendor) {
             foreach ($fields as $key => $value) {
+                if ($key === 'vendor_admin_email' && !empty($value)) {
+                    $value = trim(\core_text::strtolower($value));
+                }
                 $vendor->$key = $value;
             }
             $vendor->updated_at = $now;
@@ -82,10 +97,15 @@ class manager {
             'seat_limit' => $fields['seat_limit'] ?? 0,
             'status' => $fields['status'] ?? self::STATUS_INCOMPLETE,
             'vendor_admin_userid' => $fields['vendor_admin_userid'] ?? null,
+            'vendor_admin_email' => $fields['vendor_admin_email'] ?? null,
             'cohortid' => $fields['cohortid'] ?? null,
             'created_at' => $now,
             'updated_at' => $now,
         ], $fields);
+
+        if (!empty($record->vendor_admin_email)) {
+            $record->vendor_admin_email = trim(\core_text::strtolower($record->vendor_admin_email));
+        }
 
         $record->id = $DB->insert_record('local_vendorbilling_vendor', $record);
         return $record;
@@ -164,6 +184,11 @@ class manager {
             $vendor->updated_at = time();
             $DB->update_record('local_vendorbilling_vendor', $vendor);
         }
+        if (empty($vendor->vendor_admin_email) && !empty($user->email)) {
+            $vendor->vendor_admin_email = trim(\core_text::strtolower($user->email));
+            $vendor->updated_at = time();
+            $DB->update_record('local_vendorbilling_vendor', $vendor);
+        }
 
         self::assign_vendor_role($user->id);
         $cohort = self::ensure_cohort($vendor);
@@ -227,6 +252,77 @@ class manager {
         $used = self::get_seat_usage($vendor);
         $limit = (int) ($vendor->seat_limit ?? 0);
         return max(0, $limit - $used);
+    }
+
+    public static function enforce_seat_limit(\stdClass $vendor): void {
+        global $CFG, $DB;
+        require_once($CFG->dirroot . '/user/lib.php');
+
+        if (!self::is_active_status($vendor->status ?? '')) {
+            return;
+        }
+        if (empty($vendor->cohortid)) {
+            return;
+        }
+
+        $limit = (int) ($vendor->seat_limit ?? 0);
+        if ($limit <= 0) {
+            return;
+        }
+
+        $params = [
+            'cohortid' => $vendor->cohortid,
+            'adminid' => (int) $vendor->vendor_admin_userid,
+        ];
+
+        $active = $DB->get_records_sql(
+            "SELECT u.id, u.timecreated
+               FROM {user} u
+               JOIN {cohort_members} cm ON cm.userid = u.id
+              WHERE cm.cohortid = :cohortid
+                AND u.deleted = 0
+                AND u.suspended = 0
+                AND u.id <> :adminid
+           ORDER BY u.timecreated DESC",
+            $params
+        );
+
+        $activecount = count($active);
+        if ($activecount > $limit) {
+            foreach ($active as $user) {
+                if ($activecount <= $limit) {
+                    break;
+                }
+                $record = $DB->get_record('user', ['id' => $user->id], '*', MUST_EXIST);
+                $record->suspended = 1;
+                $record->timemodified = time();
+                user_update_user($record, false, false);
+                $activecount--;
+            }
+        } else if ($activecount < $limit) {
+            $remaining = $limit - $activecount;
+            $suspended = $DB->get_records_sql(
+                "SELECT u.id, u.timecreated
+                   FROM {user} u
+                   JOIN {cohort_members} cm ON cm.userid = u.id
+                  WHERE cm.cohortid = :cohortid
+                    AND u.deleted = 0
+                    AND u.suspended = 1
+                    AND u.id <> :adminid
+               ORDER BY u.timecreated ASC",
+                $params
+            );
+            foreach ($suspended as $user) {
+                if ($remaining <= 0) {
+                    break;
+                }
+                $record = $DB->get_record('user', ['id' => $user->id], '*', MUST_EXIST);
+                $record->suspended = 0;
+                $record->timemodified = time();
+                user_update_user($record, false, false);
+                $remaining--;
+            }
+        }
     }
 
     public static function get_vendor_users(\stdClass $vendor): array {
@@ -517,6 +613,7 @@ class manager {
         $isactive = self::is_active_status($status);
         if ($isactive) {
             self::unsuspend_vendor_users($vendor);
+            self::enforce_seat_limit($vendor);
         } else {
             self::suspend_vendor_users($vendor);
             if ($wasactive && !empty($vendor->vendor_admin_userid)) {

@@ -70,6 +70,7 @@ class event_processor {
             'stripe_customer_id' => $customerid,
             'stripe_subscription_id' => $subscriptionid,
             'status' => $status,
+            'vendor_admin_email' => $email ? trim(\core_text::strtolower($email)) : null,
         ];
 
         $vendor = manager::upsert_vendor($fields);
