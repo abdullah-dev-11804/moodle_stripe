@@ -8,44 +8,43 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Capability definitions.
- *
- * @package   local_vendorbilling
- */
+ * Capability definitions.
+ *
+ * @package   local_vendorbilling
+ */
 
 defined('MOODLE_INTERNAL') || die();
 
 $capabilities = [
-    'local/vendorbilling:manage' => [
-        'riskbitmask' => RISK_CONFIG,
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'manager' => CAP_ALLOW,
-        ],
-    ],
-    'local/vendorbilling:vendoradmin' => [
-        'riskbitmask' => RISK_PERSONAL,
-        'captype' => 'write',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'user' => CAP_PREVENT,
-        ],
-    ],
-    'local/vendorbilling:viewvendorportal' => [
-        'riskbitmask' => RISK_PERSONAL,
-        'captype' => 'read',
-        'contextlevel' => CONTEXT_SYSTEM,
-        'archetypes' => [
-            'user' => CAP_PREVENT,
-        ],
-    ],
-
+    'local/vendorbilling:manage' => [
+        'riskbitmask' => RISK_CONFIG,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+    'local/vendorbilling:vendoradmin' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'user' => CAP_PREVENT,
+        ],
+    ],
+    'local/vendorbilling:viewvendorportal' => [
+        'riskbitmask' => RISK_PERSONAL,
+        'captype' => 'read',
+        'contextlevel' => CONTEXT_SYSTEM,
+        'archetypes' => [
+            'user' => CAP_PREVENT,
+        ],
+    ],
 ];
