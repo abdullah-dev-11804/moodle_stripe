@@ -26,12 +26,13 @@ use local_vendorbilling\manager;
 
 require_login();
 $context = context_system::instance();
-require_capability('local/vendorbilling:vendoradmin', $context);
 
 $vendor = manager::get_vendor_for_user($USER->id);
 if (!$vendor) {
-    throw new moodle_exception('error_vendor_not_found', 'local_vendorbilling');
+    print_error('nopermissions', 'error', '', get_string('portal_heading', 'local_vendorbilling'));
 }
+
+
 
 $action = optional_param('action', '', PARAM_ALPHANUMEXT);
 $userid = optional_param('userid', 0, PARAM_INT);
